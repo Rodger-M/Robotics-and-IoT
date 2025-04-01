@@ -1,101 +1,115 @@
 import streamlit as st
+import pandas as pd
 import numpy as np
 import time
-import pandas as pd
+from PIL import Image, ImageDraw
 
 # Configuração da página
 st.set_page_config(page_title="Monitoramento de Forno", layout="wide")
 
-# Inicializa os históricos na sessão, se necessário
+# Inicializa os dados na sessão
 if "historico" not in st.session_state:
     st.session_state.historico = []
 if "alertas" not in st.session_state:
     st.session_state.alertas = []
-if "ultima_temp" not in st.session_state:
-    st.session_state.ultima_temp = 150  # Inicia em 150°C para simular o aquecimento
+if "temperatura_atual" not in st.session_state:
+    st.session_state.temperatura_atual = 250  # Começa com um valor mais realista
 
-# Função para gerar dados simulados com aquecimento progressivo
+# Função para gerar dados simulados com variação suave
 def gerar_dado():
-    temperatura = st.session_state.ultima_temp
+    variacao = np.random.uniform(-5, 5)  # Pequenas variações
+    nova_temperatura = st.session_state.temperatura_atual + variacao
 
-    # Se estiver abaixo de 250°C, sobe gradualmente
-    if temperatura < 250:
-        temperatura += np.random.uniform(2, 5)
+    # Simula picos acima de 300°C de vez em quando
+    if np.random.rand() < 0.05:  # 5% de chance de um pico
+        nova_temperatura += np.random.uniform(20, 40)
+
+    # Mantém a temperatura dentro de limites razoáveis
+    nova_temperatura = max(150, min(nova_temperatura, 350))
+
+    status = "Aquecendo" if nova_temperatura < 200 else "Estável"
+    
+    st.session_state.temperatura_atual = nova_temperatura  # Atualiza o valor global
+    
+    return {"timestamp": time.strftime("%H:%M:%S"), "temperature": nova_temperatura, "status": status}
+
+# Atualiza os dados continuamente
+novo_dado = gerar_dado()
+st.session_state.historico.append(novo_dado)
+
+# Mantém o histórico com no máximo 20 registros
+if len(st.session_state.historico) > 20:
+    st.session_state.historico.pop(0)
+
+# Verifica alertas e armazena se necessário
+if novo_dado["temperature"] > 300:
+    st.session_state.alertas.append(novo_dado)
+
+    # Mantém no máximo 5 alertas recentes
+    if len(st.session_state.alertas) > 5:
+        st.session_state.alertas.pop(0)
+
+# Converte os dados para DataFrame
+df = pd.DataFrame(st.session_state.historico)
+df_alertas = pd.DataFrame(st.session_state.alertas)
+
+# Função para gerar cor baseada na temperatura
+def definir_cor(temperatura):
+    if temperatura <= 150:
+        return (0, 0, 255)  # Azul
+    elif temperatura <= 250:
+        return (0, 255, 0)  # Verde
+    elif temperatura <= 300:
+        return (255, 165, 0)  # Laranja
     else:
-        # Após estabilizar, pequenas variações normais (+-3°C)
-        temperatura += np.random.uniform(-3, 3)
+        return (255, 0, 0)  # Vermelho
 
-        # Para gerar um pico eventual, o aumento acontece progressivamente
-        if np.random.rand() < 0.03:  # 3% de chance de começar um aumento
-            temperatura += np.random.uniform(5, 10)  # Pequenos aumentos até passar de 300°C
+# Função para adicionar um gradiente baseado na temperatura
+def adicionar_gradiente(imagem, x, y, temperatura, raio=40):
+    tamanho = (raio * 2, raio * 2)
+    gradiente = Image.new("RGBA", tamanho, (0, 0, 0, 0))
 
-    # Garante que a temperatura não passe de 350°C
-    temperatura = min(temperatura, 350)
+    draw = ImageDraw.Draw(gradiente)
+    cor = definir_cor(temperatura)
 
-    # Atualiza o estado da última temperatura
-    st.session_state.ultima_temp = temperatura
+    for i in range(raio, 0, -1):
+        alpha = int(255 * (1 - i / raio))
+        draw.ellipse((raio - i, raio - i, raio + i, raio + i), fill=cor + (alpha,))
 
-    status = "Aquecendo" if temperatura < 200 else "Estável"
+    imagem.paste(gradiente, (x - raio, y - raio), gradiente)
+    return imagem
 
-    # Se a temperatura passar de 300°C, gera um alerta
-    if temperatura > 300:
-        st.session_state.alertas.append({"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura})
+# Carrega a planta e adiciona o forno na posição correta com a cor dinâmica
+img_path = "planta_do_forno.png"  # Ajuste o caminho conforme necessário
+forno_x, forno_y = 600, 300  # Posição do forno
+img = Image.open(img_path)
+img_com_gradiente = adicionar_gradiente(img.copy(), forno_x, forno_y, novo_dado["temperature"])
 
-    return {"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura, "status": status}
+# Layout do dashboard
+col1, col2 = st.columns([2, 1])  # Divide a tela 2/3 e 1/3
 
-# Layout em colunas
-col1, col2 = st.columns([1, 2])  # Coluna 1 menor (Status + Alertas), Coluna 2 maior (Histórico)
-
-# ---- STATUS ----
 with col1:
-    st.subheader("📊 Status Atual")
-    status_metric = st.empty()
+    st.subheader("🌡️ Monitoramento do Forno")
 
-    # ---- ALERTAS ----
-    st.subheader("⚠️ Alertas de Temperatura (>300°C)")
-    alertas_display = st.empty()
+    # Status atualizado
+    st.metric(label="Temperatura Atual", value=f"{novo_dado['temperature']:.2f} °C")
+    st.metric(label="Status", value=novo_dado["status"])
 
-# ---- HISTÓRICO ----
+    # Exibe a imagem com o forno na cor correta
+    st.image(img_com_gradiente, caption="Planta do Forno", use_column_width=True)
+
 with col2:
     st.subheader("📋 Histórico de Dados")
-    # Ajustando o tamanho da tabela de histórico
-    historico_display = st.empty()
+    st.dataframe(df[::-1])  # Mostra os últimos registros primeiro
 
-# ---- GRÁFICO ----
+    if not df_alertas.empty:
+        st.subheader("⚠️ Alertas de Temperatura")
+        st.dataframe(df_alertas[::-1])
+
+# Gráfico de temperatura
 st.subheader("📈 Evolução da Temperatura")
-grafico_display = st.empty()
+st.line_chart(df.set_index("timestamp")["temperature"])
 
-# Loop infinito para gerar e atualizar os dados
-while True:
-    novo_dado = gerar_dado()
-
-    # Adiciona ao histórico
-    st.session_state.historico.append(novo_dado)
-
-    # Limita o histórico a 20 registros
-    if len(st.session_state.historico) > 20:
-        st.session_state.historico.pop(0)
-
-    # Converte o histórico para DataFrame
-    df = pd.DataFrame(st.session_state.historico)
-
-    # Atualiza o status
-    status_metric.subheader(f"Temperatura: {novo_dado['temperature']:.2f} °C")
-    status_metric.subheader(f"Status: {novo_dado['status']}")
-
-    # Atualiza a tabela de histórico
-    historico_display.dataframe(df[::-1], height=525)  # Definindo a altura da tabela (ajuste conforme necessário)
-
-    # Atualiza o gráfico
-    if len(df) > 1:
-        grafico_display.line_chart(df.set_index("timestamp")["temperature"])
-
-    # Atualiza a tabela de alertas
-    if len(st.session_state.alertas) > 0:
-        df_alertas = pd.DataFrame(st.session_state.alertas)
-        alertas_display.dataframe(df_alertas[::-1])
-    else:
-        alertas_display.text("Nenhum alerta registrado.")
-
-    # Pausa para atualização
-    time.sleep(1)
+# Pausa para atualização
+time.sleep(1)
+st.experimental_rerun()
