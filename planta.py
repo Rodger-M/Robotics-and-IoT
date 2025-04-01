@@ -7,7 +7,7 @@ img_path = "planta_industria.png"  # Substitua pelo caminho da sua imagem
 img = Image.open(img_path)
 
 # Definindo o centro do forno na planta (exemplo de coordenadas x, y)
-forno_x, forno_y = 600, 500  # Ajuste conforme a localização do forno na sua imagem
+forno_x, forno_y = 600, 300  # Ajuste conforme a localização do forno na sua imagem
 
 # Função para adicionar um círculo com gradiente
 def adicionar_gradiente(imagem, x, y, raio=40):
