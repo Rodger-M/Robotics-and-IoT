@@ -43,13 +43,31 @@ def gerar_dado():
 
     return {"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura, "status": status}
 
+# Função para criar o grid da planta
+def exibir_planta():
+    # Definindo o layout do grid
+    grid = [
+        ['🟩', '🟩', '🟩', '🟩', '🟩'],
+        ['🟩', '🟩', '🟩', '🟩', '🟩'],
+        ['🟩', '🟩', '🔥', '🟩', '🟩'],  # Forno em (2, 2)
+        ['🟩', '🟩', '🟩', '🟩', '🟩'],
+        ['🟩', '🟩', '🟩', '🟩', '🟩']
+    ]
+
+    # Criação do grid com botões para interação
+    for row in grid:
+        cols = st.columns(len(row))  # Criar colunas dinamicamente conforme o grid
+        for i, cell in enumerate(row):
+            # Exibe o botão com o símbolo de cada célula
+            cols[i].button(cell, key=f"{row}_{i}")
+
 # Layout em colunas
 col1, col2 = st.columns([1, 2])  # Coluna 1 menor (Status + Alertas), Coluna 2 maior (Histórico)
 
 # ---- STATUS ----
 with col1:
     st.subheader("📊 Status Atual")
-    status_metric = st.empty()  
+    status_metric = st.empty()
 
     # ---- ALERTAS ----
     st.subheader("⚠️ Alertas de Temperatura (>300°C)")
@@ -58,14 +76,19 @@ with col1:
 # ---- HISTÓRICO ----
 with col2:
     st.subheader("📋 Histórico de Dados")
-    historico_display = st.empty()  
+    historico_display = st.empty()
 
 # ---- GRÁFICO ----
 st.subheader("📈 Evolução da Temperatura")
 grafico_display = st.empty()
 
-# Loop para gerar e atualizar os dados
-while True:  # Pode ser ajustado
+# Exibir a planta
+st.title("Planta do Local de Monitoramento")
+st.write("Abaixo está o grid que representa a localização do forno.")
+exibir_planta()
+
+# Loop infinito para gerar e atualizar os dados
+while True:
     novo_dado = gerar_dado()
 
     # Adiciona ao histórico
