@@ -21,14 +21,17 @@ col1, col2 = st.columns(2)
 
 # Usando st.empty para atualizar o gráfico sem recriar
 chart_placeholder = st.empty()
-status_metric_placeholder = st.empty()
-historico_display_placeholder = st.empty()
 
-# Inicializa o layout fixo
-st.subheader("📊 Status Atual")
-st.subheader("📋 Histórico de Dados")
+# Exibe status e histórico fora do loop para evitar recriação
+if "status_displayed" not in st.session_state:
+    st.session_state.status_displayed = True
+    st.subheader("📊 Status Atual")
+    st.subheader("📋 Histórico de Dados")
 
-# Loop para gerar dados e atualizar os elementos
+# Inicializa as métricas e histórico
+status_metric = st.empty()
+historico_display = st.empty()
+
 for _ in range(100):  # Executa 100 iterações (pode ser ajustado)
     novo_dado = gerar_dado()
     st.session_state.historico.append(novo_dado)
@@ -41,14 +44,16 @@ for _ in range(100):  # Executa 100 iterações (pode ser ajustado)
     df = pd.DataFrame(st.session_state.historico)
 
     # Atualiza o gráfico de temperatura
-    chart_placeholder.line_chart(df.set_index("timestamp")["temperature"])
+    with col1:
+        chart_placeholder.line_chart(df.set_index("timestamp")["temperature"])
 
-    # Atualiza as métricas de temperatura e status
-    status_metric_placeholder.subheader(f"Temperatura: {novo_dado['temperature']:.2f} °C")
-    status_metric_placeholder.subheader(f"Status: {novo_dado['status']}")
+    # Atualiza as métricas (status e temperatura)
+    with col2:
+        status_metric.subheader(f"Temperatura: {novo_dado['temperature']:.2f} °C")
+        status_metric.subheader(f"Status: {novo_dado['status']}")
 
     # Atualiza o histórico de dados
-    historico_display_placeholder.dataframe(df[::-1])  # Exibe o histórico mais recente no topo
+    historico_display.dataframe(df[::-1])  # Exibe o histórico mais recente no topo
 
     # Pausa para atualização a cada 1 segundo
     time.sleep(1)
