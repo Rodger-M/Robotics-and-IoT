@@ -44,7 +44,7 @@ def gerar_dado():
 
 # Função para gerar imagem da planta com indicador
 def gerar_imagem(temperatura):
-    img_path = "planta.png"  # Caminho da imagem da planta
+    img_path = "planta_do_forno.png"  # Caminho da imagem da planta
     img = Image.open(img_path).convert("RGBA")
     draw = ImageDraw.Draw(img, "RGBA")
     
