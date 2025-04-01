@@ -101,6 +101,6 @@ while True:
 
     # Gera e exibe a imagem atualizada com o gradiente
     img_atualizada = gerar_imagem(novo_dado["temperature"])
-    planta_display.image(img_atualizada, use_column_width=False)
+    planta_display.image(img_atualizada, use_container_width=False)
 
     time.sleep(1)
