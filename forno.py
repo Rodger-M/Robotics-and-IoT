@@ -2,100 +2,136 @@ import streamlit as st
 import numpy as np
 import time
 import pandas as pd
-from PIL import Image, ImageDraw
+from PIL import Image
 
 # Configuração da página
 st.set_page_config(page_title="Monitoramento de Forno", layout="wide")
 
-# Inicializa variáveis na sessão
+# Inicializa os históricos na sessão, se necessário
+if "historico" not in st.session_state:
+    st.session_state.historico = []
 if "alertas" not in st.session_state:
     st.session_state.alertas = []
 if "ultima_temp" not in st.session_state:
-    st.session_state.ultima_temp = 150  # Começa em 150°C
+    st.session_state.ultima_temp = 150  # Inicia em 150°C para simular o aquecimento
 
-# Caminho da imagem da planta
-img_path = "planta.png"  # Certifique-se de que a imagem está nesse caminho
-
-# Função para gerar dados simulados com comportamento progressivo
+# Função para gerar dados simulados com aquecimento progressivo
 def gerar_dado():
     temperatura = st.session_state.ultima_temp
 
+    # Se estiver abaixo de 250°C, sobe gradualmente
     if temperatura < 250:
         temperatura += np.random.uniform(2, 5)
     else:
+        # Após estabilizar, pequenas variações normais (+-3°C)
         temperatura += np.random.uniform(-3, 3)
-        if np.random.rand() < 0.03:
-            temperatura += np.random.uniform(5, 10)
 
+        # Para gerar um pico eventual, o aumento acontece progressivamente
+        if np.random.rand() < 0.03:  # 3% de chance de começar um aumento
+            temperatura += np.random.uniform(5, 10)  # Pequenos aumentos até passar de 300°C
+
+    # Garante que a temperatura não passe de 350°C
     temperatura = min(temperatura, 350)
+
+    # Atualiza o estado da última temperatura
     st.session_state.ultima_temp = temperatura
 
     status = "Aquecendo" if temperatura < 200 else "Estável"
 
+    # Se a temperatura passar de 300°C, gera um alerta
     if temperatura > 300:
         st.session_state.alertas.append({"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura})
-    
+
     return {"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura, "status": status}
 
-# Função para gerar a imagem com o gradiente da temperatura
+# Função para gerar a imagem com o gradiente
 def gerar_imagem(temperatura):
+    img_path = "planta_do_forno.png"  # Caminho da imagem da planta
     img = Image.open(img_path).convert("RGBA")
-    draw = ImageDraw.Draw(img, "RGBA")
-
-    # Define a cor com base na temperatura
-    if temperatura < 200:
-        cor = (0, 0, 255, 180)  # Azul
-    elif temperatura < 250:
-        cor = (0, 255, 0, 180)  # Verde
-    else:
-        vermelho = min(255, int((temperatura - 250) * 5))
-        cor = (255, vermelho, 0, 180)  # De verde para vermelho
-
-    # Desenha o gradiente no local do forno (600, 300)
-    draw.ellipse((580, 280, 620, 320), fill=cor, outline=(0, 0, 0))
+    
+    # Redimensiona a imagem para 525x525
+    img = img.resize((525, 525))
+    
+    # Geração do gradiente para a indicação da temperatura
+    gradient = np.zeros((525, 525, 4), dtype=np.uint8)
+    
+    # A cor do gradiente será dependente da temperatura
+    r, g, b = 0, 0, 255  # Inicializa com azul
+    
+    if temperatura > 250:
+        r = min(255, (temperatura - 250) * 2)  # Intensifica o vermelho à medida que a temperatura sobe
+        g = max(0, 255 - r)  # Diminui o verde
+    if temperatura > 300:
+        r = 255  # Alcança o vermelho total acima de 300°C
+        g = 0
+    
+    gradient[:, :, 0] = r  # Red
+    gradient[:, :, 1] = g  # Green
+    gradient[:, :, 2] = b  # Blue
+    gradient[:, :, 3] = 128  # Transparência parcial para não cobrir completamente
+    
+    # Cria uma imagem PIL a partir do array de gradiente
+    gradient_img = Image.fromarray(gradient)
+    
+    # Aplica o gradiente à imagem da planta
+    img = Image.alpha_composite(img, gradient_img)
+    
     return img
 
-# Layout
-col1, col2 = st.columns([1, 2])
+# Layout em colunas
+col1, col2 = st.columns([1, 2])  # Coluna 1 menor (Status + Alertas), Coluna 2 maior (Planta + Gráfico)
 
+# ---- STATUS ----
 with col1:
     st.subheader("📊 Status Atual")
     status_metric = st.empty()
-    
+
+    # ---- ALERTAS ----
     st.subheader("⚠️ Alertas de Temperatura (>300°C)")
     alertas_display = st.empty()
 
+# ---- PLANTA COM GRADIENTE ----
 with col2:
-    st.subheader("🗺️ Localização do Forno")
+    st.subheader("🌍 Planta do Forno com Temperatura")
+    # Exibe a planta com o gradiente de temperatura
     planta_display = st.empty()
 
+# ---- GRÁFICO ----
 st.subheader("📈 Evolução da Temperatura")
 grafico_display = st.empty()
 
-data = []  # Lista para armazenar os dados do gráfico
-
+# Loop infinito para gerar e atualizar os dados
 while True:
     novo_dado = gerar_dado()
-    data.append(novo_dado)
 
-    if len(data) > 20:
-        data.pop(0)
+    # Adiciona ao histórico
+    st.session_state.historico.append(novo_dado)
 
-    df = pd.DataFrame(data)
+    # Limita o histórico a 20 registros
+    if len(st.session_state.historico) > 20:
+        st.session_state.historico.pop(0)
 
+    # Converte o histórico para DataFrame
+    df = pd.DataFrame(st.session_state.historico)
+
+    # Atualiza o status
     status_metric.subheader(f"Temperatura: {novo_dado['temperature']:.2f} °C")
     status_metric.subheader(f"Status: {novo_dado['status']}")
 
-    if len(df) > 1:
-        grafico_display.line_chart(df.set_index("timestamp")['temperature'])
+    # Atualiza a planta com o gradiente
+    img_atualizada = gerar_imagem(novo_dado["temperature"])
+    planta_display.image(img_atualizada, use_column_width=False)
 
+    # Atualiza o gráfico
+    if len(df) > 1:
+        grafico_display.line_chart(df.set_index("timestamp")["temperature"])
+
+    # Atualiza a tabela de alertas
     if len(st.session_state.alertas) > 0:
         df_alertas = pd.DataFrame(st.session_state.alertas)
         alertas_display.dataframe(df_alertas[::-1])
     else:
         alertas_display.text("Nenhum alerta registrado.")
 
-    img_atualizada = gerar_imagem(novo_dado["temperature"])
-    planta_display.image(img_atualizada, use_column_width=True)
-
+    # Pausa para atualização
     time.sleep(1)
