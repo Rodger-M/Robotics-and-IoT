@@ -84,7 +84,7 @@ while True:
     status_metric.subheader(f"Status: {novo_dado['status']}")
 
     # Atualiza a tabela de histórico
-    historico_display.dataframe(df[::-1], height=500)  # Definindo a altura da tabela (ajuste conforme necessário)
+    historico_display.dataframe(df[::-1], height=510)  # Definindo a altura da tabela (ajuste conforme necessário)
 
     # Atualiza o gráfico
     if len(df) > 1:
