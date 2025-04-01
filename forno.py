@@ -80,7 +80,7 @@ def adicionar_gradiente(imagem, x, y, temperatura, raio=40):
     return imagem
 
 # Carrega a planta e adiciona o forno na posição correta com a cor dinâmica
-img_path = "planta_do_forno.png"  # Ajuste o caminho conforme necessário
+img_path = "planta_industria.png"  # Ajuste o caminho conforme necessário
 forno_x, forno_y = 600, 300  # Posição do forno
 img = Image.open(img_path)
 img_com_gradiente = adicionar_gradiente(img.copy(), forno_x, forno_y, novo_dado["temperature"])
