@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import time
 import pandas as pd
+from PIL import Image, ImageDraw
 
 # Configuração da página
 st.set_page_config(page_title="Monitoramento de Forno", layout="wide")
@@ -43,6 +44,28 @@ def gerar_dado():
 
     return {"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura, "status": status}
 
+# Função para gerar imagem com gradiente dinâmico
+def gerar_imagem_com_gradiente(temperatura):
+    img_path = "planta_do_forno.png"
+    img = Image.open(img_path).convert("RGBA")
+    draw = ImageDraw.Draw(img, "RGBA")
+    
+    # Define a cor baseada na temperatura
+    if temperatura < 150:
+        cor = (0, 0, 255, 180)  # Azul
+    elif temperatura < 250:
+        cor = (0, 255, 0, 180)  # Verde
+    elif temperatura < 300:
+        cor = (255, 165, 0, 180)  # Laranja
+    else:
+        cor = (255, 0, 0, 180)  # Vermelho
+    
+    # Desenha o círculo indicando a posição do forno
+    x, y, r = 600, 300, 40  # Posição e raio do círculo
+    draw.ellipse((x-r, y-r, x+r, y+r), fill=cor)
+    
+    return img
+
 # Layout em colunas
 col1, col2 = st.columns([1, 2])  # Coluna 1 menor (Status + Alertas), Coluna 2 maior (Histórico)
 
@@ -58,12 +81,15 @@ with col1:
 # ---- HISTÓRICO ----
 with col2:
     st.subheader("📋 Histórico de Dados")
-    # Ajustando o tamanho da tabela de histórico
     historico_display = st.empty()
 
 # ---- GRÁFICO ----
 st.subheader("📈 Evolução da Temperatura")
 grafico_display = st.empty()
+
+# ---- PLANTA ----
+st.subheader("🗺️ Localização do Forno")
+planta_display = st.empty()
 
 # Loop infinito para gerar e atualizar os dados
 while True:
@@ -96,6 +122,10 @@ while True:
         alertas_display.dataframe(df_alertas[::-1])
     else:
         alertas_display.text("Nenhum alerta registrado.")
+
+    # Atualiza a imagem com o gradiente dinâmico
+    img_atualizada = gerar_imagem_com_gradiente(novo_dado["temperature"])
+    planta_display.image(img_atualizada, caption="Planta do Forno", use_column_width=True)
 
     # Pausa para atualização
     time.sleep(1)
