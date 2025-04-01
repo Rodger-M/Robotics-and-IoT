@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
 
 # Carrega a planta (substitua com o caminho correto da imagem)
-img_path = "planta_do_forno.png"  # Substitua pelo caminho da sua imagem
+img_path = "planta_industria.png"  # Substitua pelo caminho da sua imagem
 img = Image.open(img_path)
 
 # Definindo o centro do forno na planta (exemplo de coordenadas x, y)
