@@ -12,7 +12,7 @@ if "historico" not in st.session_state:
 if "alertas" not in st.session_state:
     st.session_state.alertas = []
 if "ultima_temp" not in st.session_state:
-    st.session_state.ultima_temp = 350  # Inicia em 150°C para simular o aquecimento
+    st.session_state.ultima_temp = 150  # Inicia em 150°C para simular o aquecimento
 
 # Função para gerar dados simulados com aquecimento progressivo
 def gerar_dado():
