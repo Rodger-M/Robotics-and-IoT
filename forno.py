@@ -65,7 +65,7 @@ st.subheader("📈 Evolução da Temperatura")
 grafico_display = st.empty()
 
 # Loop para gerar e atualizar os dados
-for _ in range(100):  # Pode ser ajustado
+while true:  # Pode ser ajustado
     novo_dado = gerar_dado()
 
     # Adiciona ao histórico
