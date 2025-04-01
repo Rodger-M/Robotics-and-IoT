@@ -45,7 +45,7 @@ def gerar_imagem(temperatura):
     # Define a cor com base na temperatura
     if temperatura < 200:
         cor = (0, 0, 255, 180)  # Azul
-    elif temperatura < 250:
+    elif temperatura < 260:
         cor = (0, 255, 0, 180)  # Verde
     else:
         vermelho = min(255, int((temperatura - 250) * 5))
