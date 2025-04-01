@@ -11,17 +11,32 @@ if "historico" not in st.session_state:
     st.session_state.historico = []
 if "alertas" not in st.session_state:
     st.session_state.alertas = []
-if "ultima_temp" not in st.session_state:  
-    st.session_state.ultima_temp = 200  # Começa com 200°C para evitar picos bruscos
+if "ultima_temp" not in st.session_state:
+    st.session_state.ultima_temp = 150  # Inicia em 150°C para simular o aquecimento
 
-# Função para gerar dados simulados com oscilações mais suaves
+# Função para gerar dados simulados com aquecimento progressivo
 def gerar_dado():
-    variacao = np.random.uniform(-10, 10)  # Pequena variação de temperatura
-    temperatura = max(100, min(350, st.session_state.ultima_temp + variacao))  # Mantém dentro do intervalo
-    st.session_state.ultima_temp = temperatura  # Atualiza para a próxima iteração
+    temperatura = st.session_state.ultima_temp
+
+    # Se estiver abaixo de 250°C, sobe gradualmente
+    if temperatura < 250:
+        temperatura += np.random.uniform(2, 5)
+    else:
+        # Após estabilizar, pequenas variações normais (+-3°C)
+        temperatura += np.random.uniform(-3, 3)
+
+        # Para gerar um pico eventual, o aumento acontece progressivamente
+        if np.random.rand() < 0.03:  # 3% de chance de começar um aumento
+            temperatura += np.random.uniform(5, 10)  # Pequenos aumentos até passar de 300°C
+
+    # Garante que a temperatura não passe de 350°C
+    temperatura = min(temperatura, 350)
+
+    # Atualiza o estado da última temperatura
+    st.session_state.ultima_temp = temperatura
 
     status = "Aquecendo" if temperatura < 200 else "Estável"
-    
+
     # Se a temperatura passar de 300°C, gera um alerta
     if temperatura > 300:
         st.session_state.alertas.append({"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura})
