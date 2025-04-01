@@ -7,103 +7,95 @@ from PIL import Image, ImageDraw
 # Configuração da página
 st.set_page_config(page_title="Monitoramento de Forno", layout="wide")
 
-# Inicializa os históricos na sessão, se necessário
+# Inicializa variáveis na sessão
 if "alertas" not in st.session_state:
     st.session_state.alertas = []
 if "ultima_temp" not in st.session_state:
-    st.session_state.ultima_temp = 150  # Inicia em 150°C para simular o aquecimento
+    st.session_state.ultima_temp = 150  # Começa em 150°C
 
-# Função para gerar dados simulados com aquecimento progressivo
+# Caminho da imagem da planta
+img_path = "planta.png"  # Certifique-se de que a imagem está nesse caminho
+
+# Função para gerar dados simulados com comportamento progressivo
 def gerar_dado():
     temperatura = st.session_state.ultima_temp
 
-    # Se estiver abaixo de 250°C, sobe gradualmente
     if temperatura < 250:
         temperatura += np.random.uniform(2, 5)
     else:
-        # Após estabilizar, pequenas variações normais (+-3°C)
         temperatura += np.random.uniform(-3, 3)
+        if np.random.rand() < 0.03:
+            temperatura += np.random.uniform(5, 10)
 
-        # Para gerar um pico eventual, o aumento acontece progressivamente
-        if np.random.rand() < 0.03:  # 3% de chance de começar um aumento
-            temperatura += np.random.uniform(5, 10)  # Pequenos aumentos até passar de 300°C
-
-    # Garante que a temperatura não passe de 350°C
     temperatura = min(temperatura, 350)
-
-    # Atualiza o estado da última temperatura
     st.session_state.ultima_temp = temperatura
 
     status = "Aquecendo" if temperatura < 200 else "Estável"
 
-    # Se a temperatura passar de 300°C, gera um alerta
     if temperatura > 300:
         st.session_state.alertas.append({"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura})
-
+    
     return {"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura, "status": status}
 
-# Função para gerar imagem da planta com indicador
+# Função para gerar a imagem com o gradiente da temperatura
 def gerar_imagem(temperatura):
-    img_path = "planta_do_forno.png"  # Caminho da imagem da planta
     img = Image.open(img_path).convert("RGBA")
     draw = ImageDraw.Draw(img, "RGBA")
-    
-    # Define a cor do indicador
-    if temperatura < 150:
-        cor = (0, 0, 255, 150)  # Azul
+
+    # Define a cor com base na temperatura
+    if temperatura < 200:
+        cor = (0, 0, 255, 180)  # Azul
     elif temperatura < 250:
-        cor = (0, 255, 0, 150)  # Verde
+        cor = (0, 255, 0, 180)  # Verde
     else:
-        cor = (255, 0, 0, 150)  # Vermelho
-    
-    # Define posição do forno (ajustar conforme necessário)
-    x, y = 600, 300
-    draw.ellipse((x-20, y-20, x+20, y+20), fill=cor, outline=(0, 0, 0, 255))
-    
+        vermelho = min(255, int((temperatura - 250) * 5))
+        cor = (255, vermelho, 0, 180)  # De verde para vermelho
+
+    # Desenha o gradiente no local do forno (600, 300)
+    draw.ellipse((580, 280, 620, 320), fill=cor, outline=(0, 0, 0))
     return img
 
-# Layout em colunas
-col1, col2 = st.columns([1, 2])  # Coluna 1 menor (Status + Alertas), Coluna 2 maior (Planta)
+# Layout
+col1, col2 = st.columns([1, 2])
 
-# ---- STATUS ----
 with col1:
     st.subheader("📊 Status Atual")
     status_metric = st.empty()
-
-    # ---- ALERTAS ----
+    
     st.subheader("⚠️ Alertas de Temperatura (>300°C)")
     alertas_display = st.empty()
 
-# ---- PLANTA ----
 with col2:
-    st.subheader("📍 Localização do Forno")
+    st.subheader("🗺️ Localização do Forno")
     planta_display = st.empty()
 
-# ---- GRÁFICO ----
 st.subheader("📈 Evolução da Temperatura")
 grafico_display = st.empty()
 
-# Loop infinito para gerar e atualizar os dados
+data = []  # Lista para armazenar os dados do gráfico
+
 while True:
     novo_dado = gerar_dado()
+    data.append(novo_dado)
 
-    # Atualiza o status
+    if len(data) > 20:
+        data.pop(0)
+
+    df = pd.DataFrame(data)
+
     status_metric.subheader(f"Temperatura: {novo_dado['temperature']:.2f} °C")
     status_metric.subheader(f"Status: {novo_dado['status']}")
 
-    # Atualiza o gráfico
-    grafico_display.line_chart(pd.DataFrame(st.session_state.alertas).set_index("timestamp")["temperature"] if st.session_state.alertas else pd.DataFrame({"timestamp": [], "temperature": []}))
+    if len(df) > 1:
+        grafico_display.line_chart(df.set_index("timestamp")['temperature'])
 
-    # Atualiza a tabela de alertas
     if len(st.session_state.alertas) > 0:
         df_alertas = pd.DataFrame(st.session_state.alertas)
         alertas_display.dataframe(df_alertas[::-1])
     else:
         alertas_display.text("Nenhum alerta registrado.")
 
-    # Atualiza a imagem da planta
     img_atualizada = gerar_imagem(novo_dado["temperature"])
-    planta_display.image(img_atualizada, use_container_width=True, use_container_heigth=525)
+    planta_display.image(img_atualizada, use_column_width=True)
 
-    # Pausa para atualização
     time.sleep(1)
