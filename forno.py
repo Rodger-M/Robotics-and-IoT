@@ -51,9 +51,9 @@ def gerar_imagem_com_gradiente(temperatura):
     draw = ImageDraw.Draw(img, "RGBA")
     
     # Define a cor baseada na temperatura
-    if temperatura < 150:
+    if temperatura < 200:
         cor = (0, 0, 255, 180)  # Azul
-    elif temperatura < 250:
+    elif temperatura < 260:
         cor = (0, 255, 0, 180)  # Verde
     elif temperatura < 300:
         cor = (255, 165, 0, 180)  # Laranja
@@ -125,7 +125,7 @@ while True:
 
     # Atualiza a imagem com o gradiente dinâmico
     img_atualizada = gerar_imagem_com_gradiente(novo_dado["temperature"])
-    planta_display.image(img_atualizada, caption="Planta do Forno", use_column_width=True)
+    planta_display.image(img_atualizada, caption="Planta do Forno", use_container_width=True)
 
     # Pausa para atualização
     time.sleep(1)
