@@ -103,7 +103,7 @@ while True:
 
     # Atualiza a imagem da planta
     img_atualizada = gerar_imagem(novo_dado["temperature"])
-    planta_display.image(img_atualizada, use_column_width=True)
+    planta_display.image(img_atualizada, use_container_width=True, use_container_heigth=525)
 
     # Pausa para atualização
     time.sleep(1)
