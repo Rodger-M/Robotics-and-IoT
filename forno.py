@@ -43,24 +43,6 @@ def gerar_dado():
 
     return {"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura, "status": status}
 
-# Função para criar o grid da planta
-def exibir_planta():
-    # Definindo o layout do grid
-    grid = [
-        ['🟩', '🟩', '🟩', '🟩', '🟩'],
-        ['🟩', '🟩', '🟩', '🟩', '🟩'],
-        ['🟩', '🟩', '🔥', '🟩', '🟩'],  # Forno em (2, 2)
-        ['🟩', '🟩', '🟩', '🟩', '🟩'],
-        ['🟩', '🟩', '🟩', '🟩', '🟩']
-    ]
-
-    # Criação do grid com botões para interação
-    for row in grid:
-        cols = st.columns(len(row))  # Criar colunas dinamicamente conforme o grid
-        for i, cell in enumerate(row):
-            # Exibe o botão com o símbolo de cada célula
-            cols[i].button(cell, key=f"{row}_{i}")
-
 # Layout em colunas
 col1, col2 = st.columns([1, 2])  # Coluna 1 menor (Status + Alertas), Coluna 2 maior (Histórico)
 
@@ -76,16 +58,12 @@ with col1:
 # ---- HISTÓRICO ----
 with col2:
     st.subheader("📋 Histórico de Dados")
+    # Ajustando o tamanho da tabela de histórico
     historico_display = st.empty()
 
 # ---- GRÁFICO ----
 st.subheader("📈 Evolução da Temperatura")
 grafico_display = st.empty()
-
-# Exibir a planta
-st.title("Planta do Local de Monitoramento")
-st.write("Abaixo está o grid que representa a localização do forno.")
-exibir_planta()
 
 # Loop infinito para gerar e atualizar os dados
 while True:
@@ -106,7 +84,7 @@ while True:
     status_metric.subheader(f"Status: {novo_dado['status']}")
 
     # Atualiza a tabela de histórico
-    historico_display.dataframe(df[::-1])
+    historico_display.dataframe(df[::-1], height=300)  # Definindo a altura da tabela (ajuste conforme necessário)
 
     # Atualiza o gráfico
     if len(df) > 1:
