@@ -16,8 +16,13 @@ def gerar_dado():
     status = "Aquecendo" if temperatura < 200 else "Estável"
     return {"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura, "status": status}
 
-# Loop para adicionar dados continuamente
-for _ in range(10):  # Limita as iterações para evitar sobrecarga (pode ser ajustado)
+# Layout das colunas
+col1, col2 = st.columns(2)
+
+# Exibe o gráfico e as métricas em um loop contínuo
+chart_placeholder = st.empty()  # Para atualizar o gráfico sem recriar
+
+for _ in range(100):  # Executa 100 iterações (pode ser ajustado)
     novo_dado = gerar_dado()
     st.session_state.historico.append(novo_dado)
 
@@ -28,14 +33,10 @@ for _ in range(10):  # Limita as iterações para evitar sobrecarga (pode ser aj
     # Criando DataFrame com os dados
     df = pd.DataFrame(st.session_state.historico)
 
-    # Layout das colunas
-    col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("🌡️ Temperatura do Forno")
-        # Usando st.empty para não recriar o gráfico
-        with st.empty():
-            st.line_chart(df.set_index("timestamp")["temperature"])
+        # Atualiza o gráfico sem recriar
+        chart_placeholder.line_chart(df.set_index("timestamp")["temperature"])
 
     with col2:
         st.subheader("📊 Status Atual")
@@ -46,5 +47,5 @@ for _ in range(10):  # Limita as iterações para evitar sobrecarga (pode ser aj
     st.subheader("📋 Histórico de Dados")
     st.dataframe(df[::-1])  # Exibe o histórico mais recente no topo
 
-    # Pausa para atualizar
+    # Pausa para atualizar a cada 1 segundo
     time.sleep(1)
