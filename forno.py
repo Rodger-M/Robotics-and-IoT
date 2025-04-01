@@ -14,19 +14,24 @@ if "historico" not in st.session_state:
 def gerar_dado():
     temperatura = np.random.uniform(100, 300)  # Temperatura entre 100°C e 300°C
     status = "Aquecendo" if temperatura < 200 else "Estável"
-    return {"temperature": temperatura, "status": status}
+    return {"timestamp": time.strftime("%H:%M:%S"), "temperature": temperatura, "status": status}
 
-# Exibe o título de Status Atual
-st.subheader("📊 Status Atual")
+# Layout em colunas para organizar a interface
+col1, col2 = st.columns(2)
 
-# Usando st.empty() para atualizar as métricas sem recriar
-status_metric = st.empty()
+# ---- STATUS ----
+with col1:
+    st.subheader("📊 Status Atual")
+    status_metric = st.empty()  # Placeholder para atualizar os valores
 
-# Exibe o título do Histórico de Dados
-st.subheader("📋 Histórico de Dados")
+# ---- HISTÓRICO ----
+with col2:
+    st.subheader("📋 Histórico de Dados")
+    historico_display = st.empty()  # Placeholder para atualizar a tabela
 
-# Usando st.empty() para exibir o histórico sem recriar a tabela
-historico_display = st.empty()
+# ---- GRÁFICO ----
+st.subheader("📈 Evolução da Temperatura")
+grafico_display = st.empty()  # Placeholder para o gráfico
 
 # Loop para gerar e atualizar os dados
 for _ in range(100):  # Executa 100 iterações (pode ser ajustado)
@@ -39,13 +44,19 @@ for _ in range(100):  # Executa 100 iterações (pode ser ajustado)
     if len(st.session_state.historico) > 20:
         st.session_state.historico.pop(0)
 
+    # Converte o histórico para DataFrame
+    df = pd.DataFrame(st.session_state.historico)
+
     # Atualiza o status (temperatura e status)
     status_metric.subheader(f"Temperatura: {novo_dado['temperature']:.2f} °C")
     status_metric.subheader(f"Status: {novo_dado['status']}")
 
     # Atualiza a tabela de histórico
-    df = pd.DataFrame(st.session_state.historico)
     historico_display.dataframe(df[::-1])  # Exibe o histórico mais recente no topo
+
+    # Atualiza o gráfico de temperatura
+    if len(df) > 1:  # Garante que há dados suficientes para um gráfico
+        grafico_display.line_chart(df.set_index("timestamp")["temperature"])
 
     # Pausa para atualização a cada 1 segundo
     time.sleep(1)
