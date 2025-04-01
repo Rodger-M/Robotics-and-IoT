@@ -7,7 +7,7 @@ img_path = "planta_industria.png"  # Substitua pelo caminho da sua imagem
 img = Image.open(img_path)
 
 # Definindo o centro do forno na planta (exemplo de coordenadas x, y)
-forno_x, forno_y = 300, 200  # Ajuste conforme a localização do forno na sua imagem
+forno_x, forno_y = 600, 500  # Ajuste conforme a localização do forno na sua imagem
 
 # Função para adicionar um círculo com gradiente
 def adicionar_gradiente(imagem, x, y, raio=40):
@@ -29,4 +29,4 @@ def adicionar_gradiente(imagem, x, y, raio=40):
 img_com_gradiente = adicionar_gradiente(img.copy(), forno_x, forno_y)
 
 # Exibindo a imagem com o círculo de gradiente no Streamlit
-st.image(img_com_gradiente, caption="Planta do Forno com Ponto de Localização", use_column_width=True)
+st.image(img_com_gradiente, caption="Planta do Forno com Ponto de Localização", use_container_width=True)
