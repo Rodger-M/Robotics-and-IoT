@@ -12,7 +12,7 @@ if "historico" not in st.session_state:
 if "alertas" not in st.session_state:
     st.session_state.alertas = []
 if "ultima_temp" not in st.session_state:
-    st.session_state.ultima_temp = 300  # Inicia em 150°C para simular o aquecimento
+    st.session_state.ultima_temp = 350  # Inicia em 150°C para simular o aquecimento
 
 # Função para gerar dados simulados com aquecimento progressivo
 def gerar_dado():
@@ -84,7 +84,7 @@ while True:
     status_metric.subheader(f"Status: {novo_dado['status']}")
 
     # Atualiza a tabela de histórico
-    historico_display.dataframe(df[::-1], height=450)  # Definindo a altura da tabela (ajuste conforme necessário)
+    historico_display.dataframe(df[::-1], height=500)  # Definindo a altura da tabela (ajuste conforme necessário)
 
     # Atualiza o gráfico
     if len(df) > 1:
